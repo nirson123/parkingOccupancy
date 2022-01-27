@@ -1,12 +1,7 @@
 import cv2
 import numpy as np
 import pandas as pd
-
-
-class TmpModel:
-    @staticmethod
-    def predict(photo: pd.Series) -> int:
-        return np.random.randint(2)
+from tensorflow.keras.models import load_model
 
 
 def draw_rectangles_with_labels(img_path: str, camera_number: int, model):
@@ -17,11 +12,12 @@ def draw_rectangles_with_labels(img_path: str, camera_number: int, model):
         lines = f.readlines()
         for line in lines[1:]:
             X, Y, W, H = (int(int(x) * CORD_SCALE) for x in line.split(',')[1:])
-            positions.append((X, Y, X+W, Y+H))
-            crop = img[Y:Y+H, X:X+W]
-            data_for_model = pd.Series(cv2.resize(crop, (70, 70)).flatten())
+            positions.append((X, Y, X + W, Y + H))
+            crop = img[Y:Y + H, X:X + W]
+            crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+            data_for_model = np.expand_dims(cv2.resize(crop, (70, 70)).flatten(), axis=0)
             predication = model.predict(data_for_model)
-            color = (0, 255, 0) if predication == 1 else (0, 0, 255)
+            color = (0, 255, 0) if predication <= 0.5 else (0, 0, 255)
             cv2.rectangle(img, (X, Y), (X + W, Y + H), color, 1)
 
     cv2.imshow('photo', img)
@@ -29,8 +25,9 @@ def draw_rectangles_with_labels(img_path: str, camera_number: int, model):
 
 
 def main():
-    path = '../unlabeled data set/CNR-EXT_FULL_IMAGE_1000x750/FULL_IMAGE_1000x750/SUNNY/2016-01-13/camera7/2016-01-13_0822.jpg'
-    draw_rectangles_with_labels(path, 7, TmpModel)
+    path = '../unlabeled data set/CNR-EXT_FULL_IMAGE_1000x750/FULL_IMAGE_1000x750/RAINY/2016-01-14/camera3/2016-01-14_1435.jpg'
+    cnn_model = load_model('../cnnModel_98.23')
+    draw_rectangles_with_labels(path, 3, cnn_model)
 
 
 if __name__ == '__main__':
